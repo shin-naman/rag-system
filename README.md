@@ -13,8 +13,10 @@ docs/*.md  ->  paragraph chunking  ->  OpenAI embeddings  ->  Chroma (on disk)
 question  ->  embed  ->  top-k similarity search  ->  grounded prompt  ->  answer
 ```
 
-- **Chunking**: paragraph packing — split on blank lines, greedily fill paragraphs
-  up to a character cap (`CHUNK_CAP`) so chunks never cut mid-sentence.
+- **Chunking**: structure-aware — split on Markdown headings (fence-aware, so `#`
+  inside code blocks isn't mistaken for a heading), paragraph-pack within each
+  section up to a character cap (`CHUNK_CAP`), staple the heading path onto each
+  chunk, and hard-slice over-cap paragraphs into overlapping (`CHUNK_OVERLAP`) windows.
 - **Embeddings**: OpenAI `text-embedding-3-small`.
 - **Vector store**: Chroma `PersistentClient` (`./chroma_db`) — build once, query across runs.
 - **Generation**: `gpt-4o-mini`, constrained to answer only from retrieved chunks.
@@ -42,7 +44,7 @@ Edit the `query` variable in `query_index.py` to change the question.
 
 | File | Purpose |
 |------|---------|
-| `build_index.py` | Ingest `docs/*.md`, paragraph-chunk, embed, and index into Chroma |
+| `chunk.py` | Pure chunking library (heading split, paragraph packing, overlap) |
+| `build_index.py` | Ingest `docs/*.md`, chunk (via `chunk.py`), embed, and index into Chroma |
 | `query_index.py` | Embed a question, retrieve top-k chunks, answer grounded in them |
 | `docs/` | Sample Markdown documents |
-| `check.py` | Minimal OpenAI chat + embeddings sanity check |
